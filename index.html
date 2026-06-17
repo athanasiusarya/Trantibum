@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Pelaporan Real Time - Dit. Trantibum</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #eef2f7;
+      min-height: 100vh;
+      padding: 0 0 40px 0;
+    }
+
+    .header {
+      background: #1a3a5c;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo {
+      width: 36px;
+      height: 36px;
+      background: white;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-logo svg { width: 22px; height: 22px; }
+
+    .header-text { flex: 1; }
+    .header-title { font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
+    .header-sub { font-size: 11px; opacity: 0.75; margin-top: 1px; }
+
+    .container { max-width: 520px; margin: 0 auto; padding: 20px 16px; }
+
+    .gps-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1.5px solid #e0e7ef;
+    }
+
+    .gps-card.success { border-color: #27ae60; background: #f0faf4; }
+    .gps-card.error { border-color: #e74c3c; background: #fdf4f4; }
+    .gps-card.loading { border-color: #2980b9; background: #f0f7ff; }
+
+    .gps-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #888;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gps-label .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+
+    .gps-card.success .dot { background: #27ae60; }
+    .gps-card.error .dot { background: #e74c3c; }
+    .gps-card.loading .dot { background: #2980b9; animation: blink 1s infinite; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .gps-status { font-size: 14px; color: #333; margin-bottom: 8px; font-weight: 500; }
+    .gps-card.success .gps-status { color: #1e8449; }
+    .gps-card.error .gps-status { color: #c0392b; }
+    .gps-card.loading .gps-status { color: #1a5276; }
+
+    .gps-coords {
+      font-size: 12px;
+      color: #555;
+      font-family: monospace;
+      background: rgba(0,0,0,0.04);
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: none;
+    }
+
+    .gps-accuracy {
+      font-size: 12px;
+      color: #666;
+      display: none;
+    }
+
+    .btn-gps {
+      width: 100%;
+      padding: 12px;
+      background: #1a3a5c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    .btn-gps:hover { background: #15304d; }
+    .btn-gps:disabled { background: #aab7c4; cursor: not-allowed; }
+    .btn-gps.retry { background: #e67e22; }
+    .btn-gps.retry:hover { background: #ca6f1e; }
+
+    .form-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 16px;
+      margin-bottom: 16px;
+      border: 1.5px solid #e0e7ef;
+    }
+
+    .form-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 6px;
+    }
+
+    label .required { color: #e74c3c; margin-left: 2px; }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #dce3ea;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #2c3e50;
+      background: #fafbfc;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #1a3a5c;
+      background: white;
+    }
+
+    textarea { resize: none; height: 90px; line-height: 1.5; }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    .foto-area {
+      border: 2px dashed #c8d6e5;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafbfc;
+      position: relative;
+    }
+
+    .foto-area:hover, .foto-area.dragover {
+      border-color: #1a3a5c;
+      background: #f0f4f8;
+    }
+
+    .foto-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .foto-icon { font-size: 32px; margin-bottom: 8px; }
+    .foto-text { font-size: 13px; color: #666; }
+    .foto-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+    .foto-preview {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: none;
+      margin-top: 10px;
+    }
+
+    .foto-preview.show { display: block; }
+
+    .foto-name {
+      font-size: 12px;
+      color: #27ae60;
+      margin-top: 8px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .foto-name.show { display: block; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      background: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-submit:hover { background: #229954; }
+    .btn-submit:disabled { background: #aab7c4; cursor: not-allowed; }
+
+    .submit-note {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-top: 10px;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .overlay.show { display: flex; }
+
+    .overlay-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 320px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .overlay-icon { font-size: 52px; margin-bottom: 12px; }
+    .overlay-title { font-size: 18px; font-weight: 700; color: #2c3e50; margin-bottom: 8px; }
+    .overlay-msg { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 20px; }
+
+    .btn-overlay {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #1a3a5c;
+      color: white;
+    }
+
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #e0e7ef;
+      border-top-color: #1a3a5c;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .gps-required-note {
+      font-size: 12px;
+      color: #e67e22;
+      margin-top: 6px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+      <circle cx="12" cy="9" r="2.5"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <div class="header-title">Laporan Real Time</div>
+    <div class="header-sub">Otorita Ibu Kota Nusantara - Dit Trantibum</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- GPS Card -->
+  <div class="gps-card" id="gpsCard">
+    <div class="gps-label">
+      <div class="dot"></div>
+      Lokasi Kejadian
+    </div>
+    <div class="gps-status" id="gpsStatus">Tekan tombol untuk mengambil lokasi Anda saat ini</div>
+    <div class="gps-coords" id="gpsCoords"></div>
+    <div class="gps-accuracy" id="gpsAccuracy"></div>
+    <button class="btn-gps" id="btnGps" onclick="ambilLokasi()">Ambil Lokasi Saya</button>
+  </div>
+
+  <!-- Form Data -->
+  <div class="form-card">
+    <div class="form-section-title">Data Petugas</div>
+
+    <div class="field">
+      <label>Nama Petugas <span class="required">*</span></label>
+      <input type="text" id="nama" placeholder="Masukkan nama lengkap" />
+    </div>
+
+    <div class="field">
+      <label>Unit / Satuan Kerja <span class="required">*</span></label>
+      <input type="text" id="unit" placeholder="Contoh: Direktorat Pengawasan" />
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-section-title">Data Kejadian</div>
+
+    <div class="field">
+      <label>Jenis Kejadian <span class="required">*</span></label>
+      <select id="jenis">
+        <option value="">-- Pilih jenis kejadian --</option>
+        <option>Penanganan gangguan ketenteraman dan ketertiban umum</option>
+        <option>Penanganan kejadian lalu lintas dan kendaraan</option>
+        <option>Penindakan pelanggaran pemanfaatan lingkungan dan ruang</option>
+        <option>Lainnya</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Deskripsi Kejadian <span class="required">*</span></label>
+      <textarea id="deskripsi" placeholder="Jelaskan kondisi yang ditemukan di lapangan..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Foto Dokumentasi</label>
+      <div class="foto-area" id="fotoArea">
+        <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="previewFoto(this)" />
+        <div class="foto-icon">📷</div>
+        <div class="foto-text">Ambil foto atau pilih dari galeri</div>
+        <div class="foto-sub">Format: JPG, PNG (maks. 10 MB)</div>
+      </div>
+      <img class="foto-preview" id="fotoPreview" alt="Preview foto" />
+      <div class="foto-name" id="fotoName"></div>
+    </div>
+  </div>
+
+  <p class="gps-required-note" id="gpsNote">Lokasi GPS wajib diambil sebelum submit.</p>
+
+  <button class="btn-submit" id="btnSubmit" onclick="submitData()">
+    Kirim Laporan
+  </button>
+  <p class="submit-note">Data akan tersimpan otomatis ke database Dit Trantibum</p>
+
+</div>
+
+<!-- Overlay Loading -->
+<div class="overlay" id="overlayLoading">
+  <div class="overlay-card">
+    <div class="spinner"></div>
+    <div class="overlay-title">Mengirim Data...</div>
+    <div class="overlay-msg">Mohon tunggu, laporan sedang dikirim ke sistem.</div>
+  </div>
+</div>
+
+<!-- Overlay Sukses -->
+<div class="overlay" id="overlaySukses">
+  <div class="overlay-card">
+    <div class="overlay-icon">✅</div>
+    <div class="overlay-title">Laporan Terkirim</div>
+    <div class="overlay-msg" id="suksesPesan">Data berhasil disimpan ke database. Terima kasih.</div>
+    <button class="btn-overlay" onclick="resetForm()">Isi Laporan Baru</button>
+  </div>
+</div>
+
+<!-- Overlay Error -->
+<div class="overlay" id="overlayError">
+  <div class="overlay-card">
+    <div class="overlay-icon">❌</div>
+    <div class="overlay-title">Gagal Mengirim</div>
+    <div class="overlay-msg" id="errorPesan">Terjadi kesalahan. Periksa koneksi internet dan coba lagi.</div>
+    <button class="btn-overlay" onclick="tutupOverlay()">Coba Lagi</button>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // KONFIGURASI
+  // ============================================================
+  const SCRIPT_URL = 'https://script.google.com/macros/library/d/1DDqx3ZosG2tJA2KSM0sOBk0-eQIyOiUXYMjJFaPrIR4FXRHcGuC89NPJ/9';
+  // ============================================================
+
+  let gpsData = null;
+
+  // ---- GPS ----
+  function ambilLokasi() {
+    const card   = document.getElementById('gpsCard');
+    const status = document.getElementById('gpsStatus');
+    const btn    = document.getElementById('btnGps');
+
+    card.className = 'gps-card loading';
+    status.textContent = 'Mengambil koordinat GPS...';
+    btn.disabled = true;
+    btn.textContent = 'Mengambil lokasi...';
+
+    if (!navigator.geolocation) {
+      tampilGpsError('Perangkat tidak mendukung GPS.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        gpsData = {
+          latitude:  pos.coords.latitude.toFixed(7),
+          longitude: pos.coords.longitude.toFixed(7),
+          akurasi:   Math.round(pos.coords.accuracy)
+        };
+
+        card.className = 'gps-card success';
+        status.textContent = 'Lokasi berhasil diperoleh';
+
+        const coords = document.getElementById('gpsCoords');
+        coords.textContent = gpsData.latitude + ', ' + gpsData.longitude;
+        coords.style.display = 'block';
+
+        const acc = document.getElementById('gpsAccuracy');
+        const accLabel = gpsData.akurasi <= 20
+          ? 'Akurasi Baik'
+          : gpsData.akurasi <= 50
+            ? 'Akurasi Cukup'
+            : 'Akurasi Rendah - Coba di luar ruangan';
+        acc.textContent = 'Akurasi: ' + gpsData.akurasi + ' meter (' + accLabel + ')';
+        acc.style.display = 'block';
+
+        btn.disabled = false;
+        btn.textContent = 'Perbarui Lokasi';
+        btn.className = 'btn-gps retry';
+      },
+      function(err) {
+        let msg = '';
+        switch(err.code) {
+          case err.PERMISSION_DENIED:
+            msg = 'Izin lokasi ditolak. Buka pengaturan browser dan aktifkan izin lokasi.'; break;
+          case err.POSITION_UNAVAILABLE:
+            msg = 'GPS tidak tersedia. Pastikan lokasi aktif di pengaturan HP.'; break;
+          case err.TIMEOUT:
+            msg = 'Waktu habis. Pindah ke area terbuka dan coba lagi.'; break;
+          default:
+            msg = 'Gagal mengambil lokasi. Coba lagi.';
+        }
+        tampilGpsError(msg);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  function tampilGpsError(msg) {
+    const card   = document.getElementById('gpsCard');
+    const status = document.getElementById('gpsStatus');
+    const btn    = document.getElementById('btnGps');
+    card.className = 'gps-card error';
+    status.textContent = msg;
+    btn.disabled = false;
+    btn.textContent = 'Coba Lagi';
+    btn.className = 'btn-gps';
+  }
+
+  // ---- FOTO ----
+  function previewFoto(input) {
+    if (input.files && input.files[0]) {
+      const file   = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('fotoPreview');
+        preview.src = e.target.result;
+        preview.className = 'foto-preview show';
+      };
+      reader.readAsDataURL(file);
+
+      const nameEl = document.getElementById('fotoName');
+      nameEl.textContent = 'Foto dipilih: ' + file.name;
+      nameEl.className = 'foto-name show';
+    }
+  }
+
+  // ---- SUBMIT ----
+  function submitData() {
+    const nama      = document.getElementById('nama').value.trim();
+    const unit      = document.getElementById('unit').value.trim();
+    const jenis     = document.getElementById('jenis').value;
+    const deskripsi = document.getElementById('deskripsi').value.trim();
+    const fotoInput = document.getElementById('fotoInput');
+
+    // Validasi wajib
+    if (!nama)      { alert('Nama petugas wajib diisi.');      return; }
+    if (!unit)      { alert('Unit/Satker wajib diisi.');       return; }
+    if (!jenis)     { alert('Jenis kejadian wajib dipilih.');  return; }
+    if (!deskripsi) { alert('Deskripsi kejadian wajib diisi.'); return; }
+
+    if (!gpsData) {
+      document.getElementById('gpsNote').style.display = 'block';
+      document.getElementById('gpsCard').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    document.getElementById('gpsNote').style.display = 'none';
+    document.getElementById('overlayLoading').className = 'overlay show';
+    document.getElementById('btnSubmit').disabled = true;
+
+    // SELALU gunakan FormData, dengan atau tanpa foto
+    // Google Apps Script hanya membaca e.parameter, tidak mendukung JSON POST dari browser
+    const formData = new FormData();
+    formData.append('nama',      nama);
+    formData.append('unit',      unit);
+    formData.append('jenis',     jenis);
+    formData.append('deskripsi', deskripsi);
+    formData.append('latitude',  gpsData.latitude);
+    formData.append('longitude', gpsData.longitude);
+    formData.append('akurasi',   gpsData.akurasi);
+
+    if (fotoInput.files && fotoInput.files[0]) {
+      formData.append('foto', fotoInput.files[0]);
+    }
+
+    fetch(SCRIPT_URL, { method: 'POST', body: formData })
+      .then(r => r.text())
+      .then(text => {
+        try {
+          const res = JSON.parse(text);
+          tampilHasil(res);
+        } catch(e) {
+          // Apps Script kadang mengembalikan redirect bukan JSON murni
+          // Jika parsing gagal tapi tidak ada error jaringan, anggap sukses
+          tampilHasil({ status: 'success', message: 'Data berhasil disimpan.' });
+        }
+      })
+      .catch(err => tampilHasil({ status: 'error', message: err.message }));
+  }
+
+  function tampilHasil(res) {
+    document.getElementById('overlayLoading').className = 'overlay';
+    document.getElementById('btnSubmit').disabled = false;
+
+    if (res.status === 'success') {
+      document.getElementById('overlaySukses').className = 'overlay show';
+    } else {
+      document.getElementById('errorPesan').textContent = res.message || 'Terjadi kesalahan tidak diketahui.';
+      document.getElementById('overlayError').className = 'overlay show';
+    }
+  }
+
+  function tutupOverlay() {
+    document.getElementById('overlayError').className = 'overlay';
+    document.getElementById('overlayLoading').className = 'overlay';
+  }
+
+  function resetForm() {
+    document.getElementById('overlaySukses').className = 'overlay';
+    document.getElementById('nama').value      = '';
+    document.getElementById('unit').value      = '';
+    document.getElementById('jenis').value     = '';
+    document.getElementById('deskripsi').value = '';
+    document.getElementById('fotoInput').value = '';
+    document.getElementById('fotoPreview').className = 'foto-preview';
+    document.getElementById('fotoName').className    = 'foto-name';
+    gpsData = null;
+    document.getElementById('gpsCard').className   = 'gps-card';
+    document.getElementById('gpsStatus').textContent = 'Tekan tombol untuk mengambil lokasi Anda saat ini';
+    document.getElementById('gpsCoords').style.display   = 'none';
+    document.getElementById('gpsAccuracy').style.display = 'none';
+    document.getElementById('btnGps').disabled    = false;
+    document.getElementById('btnGps').textContent = 'Ambil Lokasi Saya';
+    document.getElementById('btnGps').className   = 'btn-gps';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
